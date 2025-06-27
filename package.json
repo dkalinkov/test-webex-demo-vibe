@@ -1,0 +1,15 @@
+{
+  "name": "cisco-webex-demo",
+  "version": "1.0.0",
+  "description": "A web application that demonstrates Cisco Webex calling capabilities using the Webex SDK. This app allows users to authenticate with Webex and make voice/video calls directly from the browser.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "webex": "^3.8.0"
+  }
+}
