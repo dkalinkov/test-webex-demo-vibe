@@ -3,7 +3,6 @@ class WebexCallingApp {
     constructor() {
         this.webexCalling = new WebexCalling();
         this.setupEventListeners();
-        this.setupWebexEventListeners();
     }
 
     // Initialize the application
@@ -13,7 +12,6 @@ class WebexCallingApp {
         try {
             await this.webexCalling.initialize();
             this.updateStatus('Ready to authenticate');
-            this.updateCallStatus('Please authenticate first');
         } catch (error) {
             this.updateStatus('Error: Webex SDK not loaded');
             console.error('App initialization failed:', error);
@@ -22,8 +20,8 @@ class WebexCallingApp {
 
     // Set up DOM event listeners
     setupEventListeners() {
-        // Smooth scrolling for navigation
-        const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+        // Smooth scrolling for navigation (updated for Tailwind classes)
+        const navLinks = document.querySelectorAll('nav a[href^="#"]');
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -48,75 +46,6 @@ class WebexCallingApp {
                     this.authenticateWebex();
                 }
             });
-        }
-
-        // Enter key support for calling
-        const calleeEmailInput = document.getElementById('calleeEmail');
-        if (calleeEmailInput) {
-            calleeEmailInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !document.getElementById('callButton').disabled) {
-                    this.initiateCall();
-                }
-            });
-        }
-    }
-
-    // Set up Webex event listeners
-    setupWebexEventListeners() {
-        // Listen for incoming calls
-        window.addEventListener('webex:incomingCall', (event) => {
-            const { caller } = event.detail;
-            this.updateCallStatus(`Incoming call from ${caller}`);
-            this.showCallActions();
-            document.getElementById('answerButton').style.display = 'inline-block';
-            document.getElementById('hangupButton').style.display = 'inline-block';
-        });
-
-        // Listen for call state changes
-        window.addEventListener('webex:callStateChanged', (event) => {
-            const { state } = event.detail;
-            this.handleCallStateChange(state);
-        });
-
-        // Listen for local stream ready
-        window.addEventListener('webex:localStreamReady', (event) => {
-            const { stream } = event.detail;
-            if (stream && stream.length > 0) {
-                document.getElementById('localVideo').srcObject = stream[0];
-            }
-        });
-
-        // Listen for mute state changes
-        window.addEventListener('webex:muteStateChanged', (event) => {
-            const { isMuted } = event.detail;
-            this.updateMuteButton(isMuted);
-        });
-
-        // Listen for call reset
-        window.addEventListener('webex:callReset', () => {
-            this.resetCallUI();
-        });
-    }
-
-    // Handle call state changes
-    handleCallStateChange(newState) {
-        switch (newState) {
-            case 'CONNECTED':
-                this.updateCallStatus('Call connected');
-                this.showCallActions();
-                document.getElementById('muteButton').style.display = 'inline-block';
-                document.getElementById('hangupButton').style.display = 'inline-block';
-                document.getElementById('answerButton').style.display = 'none';
-                break;
-            case 'DISCONNECTED':
-                this.updateCallStatus('Call ended');
-                this.hideCallActions();
-                break;
-            case 'CONNECTING':
-                this.updateCallStatus('Connecting...');
-                break;
-            default:
-                this.updateCallStatus(`Call status: ${newState}`);
         }
     }
 
@@ -144,15 +73,21 @@ class WebexCallingApp {
 
         try {
             this.updateStatus('Authenticating...');
+            console.log('Starting authentication process...');
+            
             const person = await this.webexCalling.authenticate(accessToken);
 
             this.updateStatus('Authenticated successfully');
             this.showUserInfo(person);
-            this.enableCalling();
+            console.log('Authentication completed successfully');
 
         } catch (error) {
+            console.error('Authentication error:', error);
             this.updateStatus('Authentication failed');
-            alert('Authentication failed. Please check your access token.');
+            
+            // Show more detailed error message
+            const errorMessage = error.message || 'Authentication failed. Please check your access token.';
+            alert(`Authentication failed: ${errorMessage}`);
         }
     }
 
@@ -162,68 +97,11 @@ class WebexCallingApp {
             await this.webexCalling.logout();
             this.updateStatus('Logged out');
             this.hideUserInfo();
-            this.disableCalling();
             document.getElementById('accessToken').value = '';
 
         } catch (error) {
             console.error('Logout error:', error);
             alert('Error during logout');
-        }
-    }
-
-    // Initiate a call
-    async initiateCall() {
-        const calleeEmail = document.getElementById('calleeEmail').value.trim();
-
-        if (!calleeEmail) {
-            alert('Please enter an email address to call');
-            return;
-        }
-
-        try {
-            this.updateCallStatus('Initiating call...');
-            await this.webexCalling.initiateCall(calleeEmail);
-            this.updateCallStatus('Calling...');
-            this.showCallActions();
-            document.getElementById('hangupButton').style.display = 'inline-block';
-            document.getElementById('muteButton').style.display = 'inline-block';
-
-        } catch (error) {
-            this.updateCallStatus('Call failed');
-            alert('Failed to initiate call. Please try again.');
-        }
-    }
-
-    // Answer incoming call
-    async answerCall() {
-        try {
-            this.updateCallStatus('Answering call...');
-            await this.webexCalling.answerCall();
-
-        } catch (error) {
-            this.updateCallStatus('Failed to answer call');
-            alert('Failed to answer call');
-        }
-    }
-
-    // Hang up call
-    async hangupCall() {
-        try {
-            this.updateCallStatus('Ending call...');
-            await this.webexCalling.hangupCall();
-
-        } catch (error) {
-            this.updateCallStatus('Error ending call');
-            alert('Error ending call');
-        }
-    }
-
-    // Toggle mute
-    async toggleMute() {
-        try {
-            await this.webexCalling.toggleMute();
-        } catch (error) {
-            alert('Failed to toggle mute');
         }
     }
 
@@ -234,17 +112,10 @@ class WebexCallingApp {
             statusText.textContent = message;
             
             if (message.includes('success') || message.includes('Authenticated')) {
-                statusText.className = 'authenticated';
+                statusText.className = 'font-bold text-green-500';
             } else {
-                statusText.className = '';
+                statusText.className = 'font-bold text-red-500';
             }
-        }
-    }
-
-    updateCallStatus(message) {
-        const callStatusText = document.getElementById('callStatusText');
-        if (callStatusText) {
-            callStatusText.textContent = message;
         }
     }
 
@@ -255,82 +126,22 @@ class WebexCallingApp {
 
         if (userDetails) {
             userDetails.innerHTML = `
-                <p><strong>Name:</strong> ${person.displayName}</p>
-                <p><strong>Email:</strong> ${person.emails[0]}</p>
-                <p><strong>ID:</strong> ${person.id}</p>
+                <p class="mb-2"><strong>Name:</strong> ${person.displayName}</p>
+                <p class="mb-2"><strong>Email:</strong> ${person.emails[0]}</p>
+                <p class="mb-2"><strong>ID:</strong> ${person.id}</p>
             `;
         }
 
-        if (authForm) authForm.style.display = 'none';
-        if (userInfo) userInfo.style.display = 'block';
+        if (authForm) authForm.classList.add('hidden');
+        if (userInfo) userInfo.classList.remove('hidden');
     }
 
     hideUserInfo() {
         const userInfo = document.getElementById('userInfo');
         const authForm = document.getElementById('authForm');
 
-        if (userInfo) userInfo.style.display = 'none';
-        if (authForm) authForm.style.display = 'block';
-    }
-
-    enableCalling() {
-        const callButton = document.getElementById('callButton');
-        if (callButton) {
-            callButton.disabled = false;
-        }
-        this.updateCallStatus('Ready to call');
-    }
-
-    disableCalling() {
-        const callButton = document.getElementById('callButton');
-        if (callButton) {
-            callButton.disabled = true;
-        }
-        this.updateCallStatus('Please authenticate first');
-        this.hideCallActions();
-    }
-
-    showCallActions() {
-        const callActions = document.getElementById('callActions');
-        if (callActions) {
-            callActions.style.display = 'flex';
-        }
-    }
-
-    hideCallActions() {
-        const callActions = document.getElementById('callActions');
-        if (callActions) {
-            callActions.style.display = 'none';
-        }
-        document.getElementById('answerButton').style.display = 'none';
-        document.getElementById('hangupButton').style.display = 'none';
-        document.getElementById('muteButton').style.display = 'none';
-    }
-
-    updateMuteButton(isMuted) {
-        const muteButton = document.getElementById('muteButton');
-        if (muteButton) {
-            muteButton.textContent = isMuted ? '🔊 Unmute' : '🔇 Mute';
-            if (isMuted) {
-                muteButton.classList.add('muted');
-            } else {
-                muteButton.classList.remove('muted');
-            }
-        }
-    }
-
-    resetCallUI() {
-        this.hideCallActions();
-
-        // Clear video streams
-        const localVideo = document.getElementById('localVideo');
-        const remoteVideo = document.getElementById('remoteVideo');
-        if (localVideo) localVideo.srcObject = null;
-        if (remoteVideo) remoteVideo.srcObject = null;
-
-        // Reset mute button
-        this.updateMuteButton(false);
-        this.updateCallStatus('Ready to call');
+        if (userInfo) userInfo.classList.add('hidden');
+        if (authForm) authForm.classList.remove('hidden');
     }
 }
 
@@ -350,7 +161,3 @@ document.addEventListener('DOMContentLoaded', function() {
 window.scrollToAuth = () => window.webexApp.scrollToAuth();
 window.authenticateWebex = () => window.webexApp.authenticateWebex();
 window.logoutWebex = () => window.webexApp.logoutWebex();
-window.initiateCall = () => window.webexApp.initiateCall();
-window.answerCall = () => window.webexApp.answerCall();
-window.hangupCall = () => window.webexApp.hangupCall();
-window.toggleMute = () => window.webexApp.toggleMute();

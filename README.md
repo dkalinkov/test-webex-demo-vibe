@@ -1,85 +1,61 @@
-# Webex Calling Demo
+# Cisco Webex Demo
 
-A web application that demonstrates Cisco Webex calling capabilities using the Webex SDK. This app allows users to authenticate with Webex and make voice/video calls directly from the browser.
+A simple web application that demonstrates Cisco Webex calling and meeting capabilities using the Webex SDK via unpkg CDN.
 
 ## Features
 
-- **Webex Authentication**: Secure login using access tokens
-- **Voice & Video Calling**: Make calls to other Webex users
-- **Call Controls**: Answer, hang up, and mute functionality
-- **Real-time Status**: Live updates on call and authentication status
-- **Responsive Design**: Works on desktop and mobile devices
+- ✅ **User authentication** with Webex access tokens
+- ✅ **Voice and video calling** to other Webex users
+- ✅ **Join Webex meeting rooms** by ID or URL
+- ✅ **Call controls** (mute/unmute, video on/off, hangup)
+- ✅ **Real-time call status** updates
+- ✅ **No build process** required - uses CDN
+- ✅ **Responsive web design**
 
-## Setup Instructions
+## Quick Start
 
-### 1. Get Webex Developer Access
-
-1. Go to [Webex Developer Portal](https://developer.webex.com)
-2. Sign in with your Webex account (create one if needed)
-3. Create a new **Integration** or **Bot**:
-   - Click "Start Building Apps"
-   - Choose "Create an Integration"
-   - Fill in the required details:
-     - Integration name: "My Calling Demo"
-     - Description: "Demo app for calling"
-     - Redirect URI: `http://localhost:3000` (or your domain)
-     - Scopes: Select `spark:calls_read`, `spark:calls_write`, `spark:people_read`
-
-### 2. Get Your Access Token
-
-1. In the developer portal, go to your integration
-2. Copy the **Client ID** and **Client Secret**
-3. For testing, you can use the **Personal Access Token** from your profile
-4. **Important**: Personal access tokens expire in 12 hours
-
-### 3. Build the Project
-
-1. Install dependencies:
+1. **Clone or download** this repository
+2. **Serve the files** using any static web server:
    ```bash
-   npm install
-   ```
-
-2. Build the project (copies SDK files to lib folder):
-   ```bash
-   npm run build
-   ```
-
-### 4. Run the Application
-
-1. Open `index.html` in a web browser
-2. Or use a local server:
-   ```bash
-   # Using Python
-   python -m http.server 8000
+   # Using the included serve script
+   npm run serve
    
-   # Using Node.js
-   npx serve .
-   
-   # Using PHP
-   php -S localhost:8000
+   # Or just open index.html in a modern browser
    ```
+3. **Get a Webex access token**:
+   - Go to [Webex Developer Portal](https://developer.webex.com)
+   - Create a new integration
+   - Ensure it has these scopes: `spark:people_read`, `spark:calls`, `spark:meetings_write`
+   - Copy your access token
+4. **Open the app** in your browser and authenticate with your token
 
-### 4. Use the App
+## Technical Details
 
-1. **Authenticate**: Enter your access token in the Authentication section
-2. **Make a Call**: Enter a Webex user's email address and click "Start Call"
-3. **Receive Calls**: The app will automatically detect incoming calls
-4. **Control Calls**: Use the answer, hang up, and mute buttons
+### Dependencies
+- **Webex SDK**: Loaded via unpkg CDN
+  - Main SDK: `https://unpkg.com/webex@3.8.1/umd/webex.min.js`
+  - Version pinned to 3.8.1 for stability
 
-## File Structure
+### Browser Requirements
+- Modern browser with WebRTC support
+- Camera and microphone permissions for video calls
+- Internet connection for CDN access
 
+### Security Notes
+- Access tokens should be kept secure
+- This is a demo app - implement proper token management for production
+- Consider using OAuth flow instead of direct token input
+
+### File Structure
 ```
 cisco-webex-demo/
-├── index.html              # Main HTML file
-├── styles.css              # CSS styling
-├── js/                     # JavaScript files
-│   ├── webex-calling.js    # Webex SDK integration and calling logic
-│   └── app.js              # Main app logic and UI management
-├── lib/                    # Generated SDK files (created by build script)
-│   └── webex.js            # Local copy of Webex SDK
-├── build.js                # Build script to copy SDK files
-├── package.json            # NPM dependencies and scripts
-└── README.md               # This file
+├── index.html          # Main HTML file
+├── styles.css          # CSS styling
+├── js/
+│   ├── webex-calling.js # Webex SDK integration
+│   └── app.js          # UI logic and event handling
+├── package.json        # Project metadata (minimal)
+└── README.md          # This file
 ```
 
 ## Key Features Explained

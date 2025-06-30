@@ -1,16 +1,15 @@
 {
-  "name": "cisco-webex-demo",
+  "name": "cisco-webex-auth-demo",
   "version": "1.0.0",
-  "description": "A web application that demonstrates Cisco Webex calling capabilities using the Webex SDK. This app allows users to authenticate with Webex and make voice/video calls directly from the browser.",
+  "description": "A simple web application that demonstrates Cisco Webex authentication using the Webex SDK via unpkg CDN.",
   "main": "index.js",
   "scripts": {
-    "build": "node build.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "serve": "npx serve -s . -p 8080"
   },
-  "keywords": [],
+  "keywords": ["webex", "authentication", "sdk", "demo"],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "webex": "^3.8.0"
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
   }
 }

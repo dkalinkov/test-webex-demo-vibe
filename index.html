@@ -3,135 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webex Calling Demo</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Webex Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'webex-blue': '#007bff',
+                        'webex-gradient-start': '#667eea',
+                        'webex-gradient-end': '#764ba2',
+                        'webex-accent': '#ff6b6b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
 </head>
-<body>
-    <header>
-        <nav>
+<body class="font-sans leading-relaxed text-gray-800">
+    <header class="bg-white shadow-lg fixed w-full top-0 z-50">
+        <nav class="flex flex-col md:flex-row justify-between items-center p-4 md:px-8 gap-4 md:gap-0">
             <div class="logo">
-                <h1>Webex Calling Demo</h1>
+                <h1 class="text-webex-blue text-3xl font-bold">Webex Demo</h1>
             </div>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#auth">Authentication</a></li>
-                <li><a href="#calling">Calling</a></li>
-                <li><a href="#contact">Contact</a></li>
+            <ul class="flex list-none gap-8">
+                <li><a href="#home" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300">Home</a></li>
+                <li><a href="#auth" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300">Authentication</a></li>
+                <li><a href="#contact" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300">About</a></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section id="home" class="hero">
-            <div class="hero-content">
-                <h2>Webex Calling Demo</h2>
-                <p>Authenticate with Webex and make calls using the Webex SDK.</p>
-                <button class="cta-button" onclick="scrollToAuth()">Get Started</button>
+        <section id="home" class="gradient-hero text-white py-20 px-0 text-center mt-20">
+            <div class="max-w-4xl mx-auto px-5">
+                <h2 class="text-3xl md:text-5xl mb-4 font-bold">Webex Demo</h2>
+                <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto">Authenticate with Webex and make calls using the Webex SDK.</p>
+                <button class="bg-webex-accent text-white py-4 px-8 border-none rounded-full text-lg font-semibold cursor-pointer transition-all duration-300 hover:bg-red-500 hover:-translate-y-1 hover:shadow-lg" onclick="scrollToAuth()">Get Started</button>
             </div>
         </section>
 
-        <section id="auth" class="auth-section">
-            <div class="container">
-                <h2>Authentication</h2>
-                <div class="auth-container">
-                    <div class="auth-status" id="authStatus">
-                        <p>Status: <span id="statusText">Not Authenticated</span></p>
+        <section id="auth" class="bg-gray-100 py-20">
+            <div class="max-w-4xl mx-auto px-5">
+                <h2 class="text-center text-4xl mb-8 text-gray-800">Authentication</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white p-4 rounded-lg mb-6 shadow-lg" id="authStatus">
+                        <p>Status: <span id="statusText" class="font-bold text-red-500">Not Authenticated</span></p>
                     </div>
                     
-                    <div class="auth-form" id="authForm">
-                        <h3>Login to Webex</h3>
-                        <input type="text" id="accessToken" placeholder="Enter your Webex Access Token" required>
-                        <button onclick="authenticateWebex()" class="auth-button">Authenticate</button>
-                        <p class="auth-help">
+                    <div class="bg-white p-8 rounded-lg shadow-lg" id="authForm">
+                        <h3 class="mb-4 text-gray-800">Login to Webex</h3>
+                        <input type="text" id="accessToken" placeholder="Enter your Webex Access Token" required class="w-full p-3 border-2 border-gray-200 rounded-md text-base mb-4 focus:outline-none focus:border-webex-blue">
+                        <button onclick="authenticateWebex()" class="bg-webex-blue text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 w-full hover:bg-blue-700">Authenticate</button>
+                        <p class="mt-4 text-center">
                             <small>
                                 Get your access token from: 
-                                <a href="https://developer.webex.com/docs/getting-started" target="_blank">Webex Developer Portal</a>
+                                <a href="https://developer.webex.com/docs/getting-started" target="_blank" class="text-webex-blue no-underline hover:underline">Webex Developer Portal</a>
                             </small>
                         </p>
                     </div>
                     
-                    <div class="user-info" id="userInfo" style="display: none;">
-                        <h3>User Information</h3>
+                    <div class="bg-white p-8 rounded-lg shadow-lg hidden" id="userInfo">
+                        <h3 class="mb-4 text-gray-800">User Information</h3>
                         <div id="userDetails"></div>
-                        <button onclick="logoutWebex()" class="logout-button">Logout</button>
+                        <button onclick="logoutWebex()" class="bg-red-500 text-white py-2 px-4 border-none rounded cursor-pointer mt-4 hover:bg-red-600">Logout</button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="calling" class="calling-section">
-            <div class="container">
-                <h2>Make a Call</h2>
-                <div class="calling-container">
-                    <div class="call-controls" id="callControls">
-                        <div class="call-input-group">
-                            <input type="email" id="calleeEmail" placeholder="Enter email address to call" required>
-                            <button onclick="initiateCall()" class="call-button" id="callButton" disabled>
-                                📞 Start Call
-                            </button>
-                        </div>
-                        
-                        <div class="call-status" id="callStatus">
-                            <p>Call Status: <span id="callStatusText">Ready</span></p>
-                        </div>
-                        
-                        <div class="call-actions" id="callActions" style="display: none;">
-                            <button onclick="answerCall()" class="answer-button" id="answerButton" style="display: none;">
-                                ✅ Answer
-                            </button>
-                            <button onclick="hangupCall()" class="hangup-button" id="hangupButton" style="display: none;">
-                                ❌ Hang Up
-                            </button>
-                            <button onclick="toggleMute()" class="mute-button" id="muteButton" style="display: none;">
-                                🔇 Mute
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="media-container">
-                        <div class="video-container">
-                            <video id="localVideo" autoplay muted playsinline class="local-video"></video>
-                            <video id="remoteVideo" autoplay playsinline class="remote-video"></video>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="contact" class="contact">
-            <div class="container">
-                <h2>About This Demo</h2>
-                <div class="demo-info">
-                    <h3>Setup Instructions</h3>
-                    <ol>
-                        <li>Create a Webex developer account at <a href="https://developer.webex.com" target="_blank">developer.webex.com</a></li>
-                        <li>Create a new integration or bot</li>
-                        <li>Get your access token from the developer portal</li>
-                        <li>Enter the token in the Authentication section above</li>
-                        <li>Start making calls!</li>
+        <section id="contact" class="bg-gray-100 py-20">
+            <div class="max-w-4xl mx-auto px-5">
+                <h2 class="text-center text-4xl mb-8 text-gray-800">About This Demo</h2>
+                <div class="bg-white p-8 rounded-lg shadow-lg">
+                    <h3 class="text-webex-blue mb-4">Setup Instructions</h3>
+                    <ol class="ml-6 mb-6 list-decimal">
+                        <li class="mb-2">Create a Webex developer account at <a href="https://developer.webex.com" target="_blank" class="text-webex-blue no-underline hover:underline">developer.webex.com</a></li>
+                        <li class="mb-2">Create a new integration with required scope: <code class="bg-gray-100 px-1 rounded">spark:people_read</code></li>
+                        <li class="mb-2">Get your access token from the developer portal</li>
+                        <li class="mb-2">Enter the token in the Authentication section above</li>
+                        <li class="mb-2">View your authenticated user information!</li>
                     </ol>
                     
-                    <h3>Features</h3>
-                    <ul>
-                        <li>Webex SDK integration</li>
-                        <li>User authentication</li>
-                        <li>Voice and video calling</li>
-                        <li>Call controls (mute, hangup)</li>
-                        <li>Real-time call status updates</li>
+                    <h3 class="text-webex-blue mb-4">Features</h3>
+                    <ul class="ml-6 mb-6 list-disc">
+                        <li class="mb-2">Webex SDK integration via unpkg CDN</li>
+                        <li class="mb-2">User authentication with access tokens</li>
+                        <li class="mb-2">User information display</li>
+                        <li class="mb-2">Token validation</li>
+                        <li class="mb-2">Clean, simple interface</li>
+                        <li class="mb-2">No build process required</li>
                     </ul>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 Webex Calling Demo. Built with Webex SDK.</p>
+    <footer class="bg-gray-800 text-white text-center py-8">
+        <div class="max-w-4xl mx-auto px-5">
+            <p>&copy; 2025 Webex Authentication Demo. Built with Webex SDK.</p>
         </div>
     </footer>
 
-    <!-- Load Webex SDK from local lib folder -->
-    <script src="lib/webex.min.js"></script>
+    <!-- Load Webex SDK from unpkg CDN -->
+    <script crossorigin src="https://unpkg.com/webex@3.8.1/umd/webex.min.js"></script>
     <script src="js/webex-calling.js"></script>
     <script src="js/app.js"></script>
 </body>
