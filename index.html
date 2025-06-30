@@ -38,6 +38,7 @@
             <ul class="flex list-none gap-8">
                 <li><a href="#home" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300">Home</a></li>
                 <li><a href="#auth" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300">Authentication</a></li>
+                <li><a href="#calling" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300" id="callingNavLink">Calling</a></li>
                 <li><a href="#contact" class="text-gray-800 font-medium hover:text-webex-blue transition-colors duration-300">About</a></li>
             </ul>
         </nav>
@@ -63,7 +64,7 @@
                     <div class="bg-white p-8 rounded-lg shadow-lg" id="authForm">
                         <h3 class="mb-4 text-gray-800">Login to Webex</h3>
                         <input type="text" id="accessToken" placeholder="Enter your Webex Access Token" required class="w-full p-3 border-2 border-gray-200 rounded-md text-base mb-4 focus:outline-none focus:border-webex-blue">
-                        <button onclick="authenticateWebex()" class="bg-webex-blue text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 w-full hover:bg-blue-700">Authenticate</button>
+                        <button onclick="authenticateWebex()" class="bg-webex-blue text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 w-full hover:bg-blue-700">Authenticate (For token verification)</button>
                         <p class="mt-4 text-center">
                             <small>
                                 Get your access token from: 
@@ -81,6 +82,47 @@
             </div>
         </section>
 
+        <section id="calling" class="bg-white py-20" data-requires-auth="true">
+            <div class="max-w-4xl mx-auto px-5">
+                <h2 class="text-center text-4xl mb-8 text-gray-800">Make a Call</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6 shadow-lg">
+                        <p>Call Status: <span id="callStatusText" class="font-bold text-blue-500">Ready to call</span></p>
+                    </div>
+                    
+                    <div class="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
+                        <h3 class="mb-4 text-gray-800">Call Options</h3>
+                        
+                        <div class="mb-4">
+                            <label for="callDestination" class="block text-sm font-medium text-gray-700 mb-2">Call To:</label>
+                            <input type="text" id="callDestination" placeholder="Enter phone number or email address"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-md text-base focus:outline-none focus:border-webex-blue">
+                            <small class="text-gray-500 mt-1 block">Enter a phone number (e.g., +1234567890) or email address</small>
+                        </div>
+                        
+                        <div class="flex gap-4 mb-6">
+                            <button onclick="initiateCall()" id="callButton"
+                                    class="bg-green-500 text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 hover:bg-green-600 flex-1">
+                                📞 Start Call
+                            </button>
+                            <button onclick="hangupCall()" id="hangupButton" 
+                                    class="bg-red-500 text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 hover:bg-red-600 flex-1 hidden">
+                                📞 End Call
+                            </button>
+                        </div>
+                        
+                        <div class="text-center text-sm text-gray-600">
+                            <p>💡 <strong>Tip:</strong> For contact center calls, use the provided phone number from your admin</p>
+                        </div>
+
+                        <div>
+                            <audio id="remote-audio" autoplay></audio>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="contact" class="bg-gray-100 py-20">
             <div class="max-w-4xl mx-auto px-5">
                 <h2 class="text-center text-4xl mb-8 text-gray-800">About This Demo</h2>
@@ -88,10 +130,10 @@
                     <h3 class="text-webex-blue mb-4">Setup Instructions</h3>
                     <ol class="ml-6 mb-6 list-decimal">
                         <li class="mb-2">Create a Webex developer account at <a href="https://developer.webex.com" target="_blank" class="text-webex-blue no-underline hover:underline">developer.webex.com</a></li>
-                        <li class="mb-2">Create a new integration with required scope: <code class="bg-gray-100 px-1 rounded">spark:people_read</code></li>
+                        <li class="mb-2">Create a new integration with required scopes: <code class="bg-gray-100 px-1 rounded">spark:people_read</code>, <code class="bg-gray-100 px-1 rounded">spark:calls</code></li>
                         <li class="mb-2">Get your access token from the developer portal</li>
                         <li class="mb-2">Enter the token in the Authentication section above</li>
-                        <li class="mb-2">View your authenticated user information!</li>
+                        <li class="mb-2">Use the Calling section to make outbound calls!</li>
                     </ol>
                     
                     <h3 class="text-webex-blue mb-4">Features</h3>
@@ -99,6 +141,7 @@
                         <li class="mb-2">Webex SDK integration via unpkg CDN</li>
                         <li class="mb-2">User authentication with access tokens</li>
                         <li class="mb-2">User information display</li>
+                        <li class="mb-2">Outbound calling to phone numbers and users</li>
                         <li class="mb-2">Token validation</li>
                         <li class="mb-2">Clean, simple interface</li>
                         <li class="mb-2">No build process required</li>
@@ -116,7 +159,8 @@
 
     <!-- Load Webex SDK from unpkg CDN -->
     <script crossorigin src="https://unpkg.com/webex@3.8.1/umd/webex.min.js"></script>
-    <script src="js/webex-calling.js"></script>
+    <script crossorigin src='https://unpkg.com/webex/umd/calling.min.js'></script>
+    <script src="js/webex-wrapper.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

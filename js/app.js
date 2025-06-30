@@ -1,26 +1,21 @@
-// Main App Logic and UI Management
 class WebexCallingApp {
     constructor() {
         this.webexCalling = new WebexCalling();
         this.setupEventListeners();
     }
 
-    // Initialize the application
-    async initialize() {
-        console.log('Initializing Webex Calling Demo App...');
-        
+    async initialize() {        
         try {
             await this.webexCalling.initialize();
             this.updateStatus('Ready to authenticate');
+            this.updateCallStatus('Ready to call (authenticate first)');
         } catch (error) {
             this.updateStatus('Error: Webex SDK not loaded');
             console.error('App initialization failed:', error);
         }
     }
 
-    // Set up DOM event listeners
     setupEventListeners() {
-        // Smooth scrolling for navigation (updated for Tailwind classes)
         const navLinks = document.querySelectorAll('nav a[href^="#"]');
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -38,7 +33,6 @@ class WebexCallingApp {
             });
         });
 
-        // Enter key support for authentication
         const accessTokenInput = document.getElementById('accessToken');
         if (accessTokenInput) {
             accessTokenInput.addEventListener('keypress', (e) => {
@@ -47,9 +41,17 @@ class WebexCallingApp {
                 }
             });
         }
+
+        const callDestinationInput = document.getElementById('callDestination');
+        if (callDestinationInput) {
+            callDestinationInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.initiateCall();
+                }
+            });
+        }
     }
 
-    // Scroll to authentication section
     scrollToAuth() {
         const authSection = document.querySelector('#auth');
         if (authSection) {
@@ -62,7 +64,6 @@ class WebexCallingApp {
         }
     }
 
-    // Authenticate with Webex
     async authenticateWebex() {
         const accessToken = document.getElementById('accessToken').value.trim();
 
@@ -73,13 +74,11 @@ class WebexCallingApp {
 
         try {
             this.updateStatus('Authenticating...');
-            console.log('Starting authentication process...');
             
             const person = await this.webexCalling.authenticate(accessToken);
 
             this.updateStatus('Authenticated successfully');
             this.showUserInfo(person);
-            console.log('Authentication completed successfully');
 
         } catch (error) {
             console.error('Authentication error:', error);
@@ -91,7 +90,6 @@ class WebexCallingApp {
         }
     }
 
-    // Logout from Webex
     async logoutWebex() {
         try {
             await this.webexCalling.logout();
@@ -105,16 +103,72 @@ class WebexCallingApp {
         }
     }
 
-    // UI Helper Functions
+    async initiateCall() {
+        if (!this.webexCalling.getAuthenticationStatus()) {
+            alert('Please authenticate first before making calls');
+            return;
+        }
+
+        const destination = document.getElementById('callDestination').value.trim();
+
+        if (!destination) {
+            alert('Please enter a phone number or email address to call');
+            return;
+        }
+
+        try {
+            this.updateCallStatus('Initiating call...');
+            
+            await this.webexCalling.initiateCall(destination);
+            
+            this.updateCallStatus('Calling...');
+            this.showCallControls();
+        } catch (error) {
+            console.error('Call initiation error:', error);
+            this.updateCallStatus('Call failed');
+            
+            const errorMessage = error.message || 'Failed to initiate call. Please try again.';
+            alert(`Call failed: ${errorMessage}`);
+        }
+    }
+
+    async hangupCall() {
+        try {
+            this.updateCallStatus('Ending call...');
+            await this.webexCalling.hangupCall();
+            this.updateCallStatus('Call ended');
+            this.hideCallControls();
+
+        } catch (error) {
+            console.error('Hangup error:', error);
+            this.updateCallStatus('Error ending call');
+            alert('Error ending call');
+        }
+    }
+
     updateStatus(message) {
         const statusText = document.getElementById('statusText');
         if (statusText) {
-            statusText.textContent = message;
-            
+            statusText.textContent = message;            
             if (message.includes('success') || message.includes('Authenticated')) {
                 statusText.className = 'font-bold text-green-500';
             } else {
                 statusText.className = 'font-bold text-red-500';
+            }
+        }
+    }
+
+    updateCallStatus(message) {
+        const callStatusText = document.getElementById('callStatusText');
+        if (callStatusText) {
+            callStatusText.textContent = message;
+            
+            if (message.includes('connected') || message.includes('Calling')) {
+                callStatusText.className = 'font-bold text-green-500';
+            } else if (message.includes('failed') || message.includes('Error')) {
+                callStatusText.className = 'font-bold text-red-500';
+            } else {
+                callStatusText.className = 'font-bold text-blue-500';
             }
         }
     }
@@ -134,6 +188,8 @@ class WebexCallingApp {
 
         if (authForm) authForm.classList.add('hidden');
         if (userInfo) userInfo.classList.remove('hidden');
+        
+        this.updateCallStatus('Ready to call');
     }
 
     hideUserInfo() {
@@ -142,14 +198,35 @@ class WebexCallingApp {
 
         if (userInfo) userInfo.classList.add('hidden');
         if (authForm) authForm.classList.remove('hidden');
+        
+        this.updateCallStatus('Ready to call (authenticate first)');
     }
+
+    showCallControls() {
+        const callControls = document.getElementById('callControls');
+        const callButton = document.getElementById('callButton');
+        const hangupButton = document.getElementById('hangupButton');
+        
+        if (callControls) callControls.classList.remove('hidden');
+        if (callButton) callButton.classList.add('hidden');
+        if (hangupButton) hangupButton.classList.remove('hidden');
+    }
+
+    hideCallControls() {
+        const callControls = document.getElementById('callControls');
+        const callButton = document.getElementById('callButton');
+        const hangupButton = document.getElementById('hangupButton');
+        
+        if (callControls) callControls.classList.add('hidden');
+        if (callButton) callButton.classList.remove('hidden');
+        if (hangupButton) hangupButton.classList.add('hidden');
+    }
+
 }
 
-// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing Webex app...');
     
-    // Small delay to ensure scripts are loaded
     setTimeout(() => {
         console.log('Creating Webex app instance...');
         window.webexApp = new WebexCallingApp();
@@ -161,3 +238,5 @@ document.addEventListener('DOMContentLoaded', function() {
 window.scrollToAuth = () => window.webexApp.scrollToAuth();
 window.authenticateWebex = () => window.webexApp.authenticateWebex();
 window.logoutWebex = () => window.webexApp.logoutWebex();
+window.initiateCall = () => window.webexApp.initiateCall();
+window.hangupCall = () => window.webexApp.hangupCall();

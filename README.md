@@ -7,7 +7,6 @@ A simple web application that demonstrates Cisco Webex calling and meeting capab
 - ✅ **User authentication** with Webex access tokens
 - ✅ **Voice and video calling** to other Webex users
 - ✅ **Join Webex meeting rooms** by ID or URL
-- ✅ **Call controls** (mute/unmute, video on/off, hangup)
 - ✅ **Real-time call status** updates
 - ✅ **No build process** required - uses CDN
 - ✅ **Responsive web design**
@@ -69,7 +68,6 @@ cisco-webex-demo/
 - **Outgoing Calls**: Enter email address to call any Webex user
 - **Incoming Calls**: Automatic detection and answer capabilities
 - **Video Support**: Local and remote video streams
-- **Audio Controls**: Mute/unmute functionality
 
 ### UI Components
 - **Status Indicators**: Real-time authentication and call status
@@ -146,7 +144,6 @@ The application is now organized into modular components:
 ### **webex-calling.js** - Core Webex Integration
 - `WebexCalling` class that handles all Webex SDK interactions
 - Authentication and registration with Webex services
-- Call management (initiate, answer, hangup, mute)
 - Event-driven architecture using custom events
 - Isolated from UI concerns for better maintainability
 
