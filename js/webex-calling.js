@@ -11,15 +11,14 @@ class WebexCalling {
     async initialize() {
         console.log('Initializing Webex Calling...');
         
-        // Check if Webex SDK is loaded
-        if (typeof window.Webex !== 'undefined') {
-            console.log('Webex SDK loaded successfully');
-            console.log('Webex version:', window.Webex.version || 'version unknown');
-            return;
+        // Check if Webex SDK is loaded (should be available since it's local)
+        if (typeof window.Webex === 'undefined') {
+            console.error('Webex SDK not loaded - check if node_modules/webex/dist/webex.min.js exists');
+            throw new Error('Webex SDK not loaded - please ensure the SDK file is properly installed');
         }
         
-        console.error('Webex SDK not loaded');
-        throw new Error('Webex SDK not loaded - please refresh the page');
+        console.log('Webex SDK loaded successfully from local package');
+        console.log('Webex version:', window.Webex.version || 'unknown');
     }
 
     // Authenticate with Webex

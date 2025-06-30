@@ -1,42 +1,51 @@
 const fs = require('fs');
+const path = require('path');
 
-console.log('Building Webex Calling Demo...');
+// Build script to copy Webex SDK files to lib folder
+console.log('🔨 Starting build process...');
 
-// Clean and create dist directory
-if (fs.existsSync('dist')) {
-    fs.rmSync('dist', { recursive: true });
+// Create lib directory if it doesn't exist
+const libDir = path.join(__dirname, 'lib');
+if (!fs.existsSync(libDir)) {
+    fs.mkdirSync(libDir, { recursive: true });
+    console.log('📁 Created lib directory');
 }
 
-fs.mkdirSync('dist', { recursive: true });
-fs.mkdirSync('dist/js', { recursive: true });
-fs.mkdirSync('dist/css', { recursive: true });
-fs.mkdirSync('dist/lib', { recursive: true });
+// Source and destination paths
+const webexSource = path.join(__dirname, 'node_modules', 'webex', 'dist', 'webex.js');
+const webexDest = path.join(libDir, 'webex.js');
 
-// Copy files
-const files = [
-    { from: 'index.html', to: 'dist/index.html' },
-    { from: 'styles.css', to: 'dist/css/styles.css' },
-    { from: 'js/webex-calling.js', to: 'dist/js/webex-calling.js' },
-    { from: 'js/app.js', to: 'dist/js/app.js' },
-    { from: 'node_modules/webex/umd/webex.min.js', to: 'dist/lib/webex.min.js' }
-];
+const webexMapSource = path.join(__dirname, 'node_modules', 'webex', 'dist', 'webex.js.map');
+const webexMapDest = path.join(libDir, 'webex.js.map');
 
-console.log('Copying files...');
-files.forEach(file => {
-    if (fs.existsSync(file.from)) {
-        fs.copyFileSync(file.from, file.to);
-        console.log(`✓ ${file.from} → ${file.to}`);
+try {
+    // Copy main Webex SDK file
+    if (fs.existsSync(webexSource)) {
+        fs.copyFileSync(webexSource, webexDest);
+        console.log('✅ Copied webex.js to lib/');
     } else {
-        console.log(`✗ ${file.from} not found`);
+        console.error('❌ Source file not found:', webexSource);
+        process.exit(1);
     }
-});
 
-// Update HTML to use correct paths
-console.log('Updating HTML paths...');
-let html = fs.readFileSync('dist/index.html', 'utf8');
-html = html.replace('node_modules/webex/umd/webex.min.js', 'lib/webex.min.js');
-html = html.replace('styles.css', 'css/styles.css');
-fs.writeFileSync('dist/index.html', html);
+    // Copy source map file (optional, for debugging)
+    if (fs.existsSync(webexMapSource)) {
+        fs.copyFileSync(webexMapSource, webexMapDest);
+        console.log('✅ Copied webex.js.map to lib/');
+    } else {
+        console.log('⚠️  Source map file not found (optional):', webexMapSource);
+    }
 
-console.log('✅ Build complete! Files are in dist/ folder');
-console.log('🚀 Run: npm start');
+    // Get file sizes for reporting
+    const webexStats = fs.statSync(webexDest);
+    const fileSizeMB = (webexStats.size / (1024 * 1024)).toFixed(2);
+
+    console.log(`📊 Webex SDK file size: ${fileSizeMB} MB`);
+    console.log('🎉 Build completed successfully!');
+    console.log('💡 You can now use lib/webex.js instead of node_modules path');
+    console.log('� Update your HTML to use: <script src="lib/webex.js"></script>');
+
+} catch (error) {
+    console.error('❌ Build failed:', error.message);
+    process.exit(1);
+}

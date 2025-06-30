@@ -5,9 +5,6 @@
   "main": "index.js",
   "scripts": {
     "build": "node build.js",
-    "serve": "live-server --port=3000 --open=/index.html",
-    "start": "npm run build && npm run serve",
-    "clean": "node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist', {recursive:true}); console.log('Cleaned dist folder')\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,8 +12,5 @@
   "license": "ISC",
   "dependencies": {
     "webex": "^3.8.0"
-  },
-  "devDependencies": {
-    "live-server": "^1.2.2"
   }
 }

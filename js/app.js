@@ -337,8 +337,13 @@ class WebexCallingApp {
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing Webex app...');
-    window.webexApp = new WebexCallingApp();
-    window.webexApp.initialize();
+    
+    // Small delay to ensure scripts are loaded
+    setTimeout(() => {
+        console.log('Creating Webex app instance...');
+        window.webexApp = new WebexCallingApp();
+        window.webexApp.initialize();
+    }, 100);
 });
 
 // Global functions for HTML onclick handlers
