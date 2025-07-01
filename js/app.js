@@ -2,6 +2,7 @@ class WebexCallingApp {
     constructor() {
         this.webexCalling = new WebexCalling();
         this.setupEventListeners();
+        this.setupCallingStatusListener();
     }
 
     async initialize() {        
@@ -52,6 +53,14 @@ class WebexCallingApp {
         }
     }
 
+    // Set up listener for calling status updates
+    setupCallingStatusListener() {
+        window.addEventListener('callingStatusUpdate', (event) => {
+            const status = event.detail.status;
+            this.updateCallingStatus(status);
+        });
+    }
+
     scrollToAuth() {
         const authSection = document.querySelector('#auth');
         if (authSection) {
@@ -74,6 +83,7 @@ class WebexCallingApp {
 
         try {
             this.updateStatus('Authenticating...');
+            this.updateCallingStatus('Waiting for authentication...');
             
             const person = await this.webexCalling.authenticate(accessToken);
 
@@ -83,6 +93,7 @@ class WebexCallingApp {
         } catch (error) {
             console.error('Authentication error:', error);
             this.updateStatus('Authentication failed');
+            this.updateCallingStatus('Authentication failed');
             
             // Show more detailed error message
             const errorMessage = error.message || 'Authentication failed. Please check your access token.';
@@ -94,6 +105,7 @@ class WebexCallingApp {
         try {
             await this.webexCalling.logout();
             this.updateStatus('Logged out');
+            this.updateCallingStatus('Not initialized');
             this.hideUserInfo();
             document.getElementById('accessToken').value = '';
 
@@ -169,6 +181,24 @@ class WebexCallingApp {
                 callStatusText.className = 'font-bold text-red-500';
             } else {
                 callStatusText.className = 'font-bold text-blue-500';
+            }
+        }
+    }
+
+    // Update calling service status
+    updateCallingStatus(message) {
+        const callingStatusText = document.getElementById('callingStatusText');
+        if (callingStatusText) {
+            callingStatusText.textContent = message;
+            
+            if (message.includes('ready') || message.includes('Ready')) {
+                callingStatusText.className = 'font-bold text-green-500';
+            } else if (message.includes('failed') || message.includes('Error') || message.includes('timeout')) {
+                callingStatusText.className = 'font-bold text-red-500';
+            } else if (message.includes('Initializing') || message.includes('Registering') || message.includes('Getting')) {
+                callingStatusText.className = 'font-bold text-blue-500';
+            } else {
+                callingStatusText.className = 'font-bold text-gray-500';
             }
         }
     }
