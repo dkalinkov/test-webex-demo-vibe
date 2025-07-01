@@ -3,11 +3,11 @@ class WebexCallingApp {
         this.webexCalling = new WebexCalling();
         this.setupEventListeners();
         this.setupCallingStatusListener();
+        this.setupMeetingStatusListener();
     }
 
     async initialize() {        
         try {
-            await this.webexCalling.initialize();
             this.updateStatus('Ready to authenticate');
             this.updateCallStatus('Ready to call (authenticate first)');
         } catch (error) {
@@ -33,31 +33,19 @@ class WebexCallingApp {
                 }
             });
         });
-
-        const accessTokenInput = document.getElementById('accessToken');
-        if (accessTokenInput) {
-            accessTokenInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.authenticateWebex();
-                }
-            });
-        }
-
-        const callDestinationInput = document.getElementById('callDestination');
-        if (callDestinationInput) {
-            callDestinationInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.initiateCall();
-                }
-            });
-        }
     }
 
-    // Set up listener for calling status updates
     setupCallingStatusListener() {
         window.addEventListener('callingStatusUpdate', (event) => {
             const status = event.detail.status;
             this.updateCallingStatus(status);
+        });
+    }
+
+    setupMeetingStatusListener() {
+        window.addEventListener('meetingStatusUpdate', (event) => {
+            const status = event.detail.status;
+            this.updateMeetingStatus(status);
         });
     }
 
@@ -95,7 +83,6 @@ class WebexCallingApp {
             this.updateStatus('Authentication failed');
             this.updateCallingStatus('Authentication failed');
             
-            // Show more detailed error message
             const errorMessage = error.message || 'Authentication failed. Please check your access token.';
             alert(`Authentication failed: ${errorMessage}`);
         }
@@ -106,7 +93,9 @@ class WebexCallingApp {
             await this.webexCalling.logout();
             this.updateStatus('Logged out');
             this.updateCallingStatus('Not initialized');
+            this.updateMeetingStatus('Ready to join');
             this.hideUserInfo();
+            this.hideMeetingControls();
             document.getElementById('accessToken').value = '';
 
         } catch (error) {
@@ -158,6 +147,47 @@ class WebexCallingApp {
         }
     }
 
+    async joinMeeting() {
+        if (!this.webexCalling.getAuthenticationStatus()) {
+            alert('Please authenticate first before joining meetings');
+            return;
+        }
+
+        const meetingId = document.getElementById('meetingId').value.trim();
+
+        if (!meetingId) {
+            alert('Please enter a meeting ID or URL');
+            return;
+        }
+
+        try {
+            this.updateMeetingStatus('Joining meeting...');
+            await this.webexCalling.joinMeeting(meetingId);
+            this.updateMeetingStatus('Connected to meeting');
+            this.showMeetingControls();
+
+        } catch (error) {
+            console.error('Meeting join error:', error);
+            this.updateMeetingStatus('Failed to join meeting');
+            const errorMessage = error.message || 'Failed to join meeting. Please try again.';
+            alert(`Meeting join failed: ${errorMessage}`);
+        }
+    }
+
+    async leaveMeeting() {
+        try {
+            this.updateMeetingStatus('Leaving meeting...');
+            await this.webexCalling.leaveMeeting();
+            this.updateMeetingStatus('Left meeting');
+            this.hideMeetingControls();
+
+        } catch (error) {
+            console.error('Leave meeting error:', error);
+            this.updateMeetingStatus('Error leaving meeting');
+            alert('Error leaving meeting');
+        }
+    }
+
     updateStatus(message) {
         const statusText = document.getElementById('statusText');
         if (statusText) {
@@ -185,7 +215,6 @@ class WebexCallingApp {
         }
     }
 
-    // Update calling service status
     updateCallingStatus(message) {
         const callingStatusText = document.getElementById('callingStatusText');
         if (callingStatusText) {
@@ -199,6 +228,21 @@ class WebexCallingApp {
                 callingStatusText.className = 'font-bold text-blue-500';
             } else {
                 callingStatusText.className = 'font-bold text-gray-500';
+            }
+        }
+    }
+
+    updateMeetingStatus(message) {
+        const meetingStatusText = document.getElementById('meetingStatusText');
+        if (meetingStatusText) {
+            meetingStatusText.textContent = message;
+            
+            if (message.includes('Connected') || message.includes('Joined')) {
+                meetingStatusText.className = 'font-bold text-green-500';
+            } else if (message.includes('failed') || message.includes('Error')) {
+                meetingStatusText.className = 'font-bold text-red-500';
+            } else {
+                meetingStatusText.className = 'font-bold text-blue-500';
             }
         }
     }
@@ -252,6 +296,22 @@ class WebexCallingApp {
         if (hangupButton) hangupButton.classList.add('hidden');
     }
 
+    showMeetingControls() {
+        const joinButton = document.getElementById('joinButton');
+        const leaveButton = document.getElementById('leaveButton');
+        
+        if (joinButton) joinButton.classList.add('hidden');
+        if (leaveButton) leaveButton.classList.remove('hidden');
+    }
+
+    hideMeetingControls() {
+        const joinButton = document.getElementById('joinButton');
+        const leaveButton = document.getElementById('leaveButton');
+        
+        if (joinButton) joinButton.classList.remove('hidden');
+        if (leaveButton) leaveButton.classList.add('hidden');
+    }
+
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -264,9 +324,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-// Global functions for HTML onclick handlers
 window.scrollToAuth = () => window.webexApp.scrollToAuth();
 window.authenticateWebex = () => window.webexApp.authenticateWebex();
 window.logoutWebex = () => window.webexApp.logoutWebex();
 window.initiateCall = () => window.webexApp.initiateCall();
 window.hangupCall = () => window.webexApp.hangupCall();
+window.joinMeeting = () => window.webexApp.joinMeeting();
+window.leaveMeeting = () => window.webexApp.leaveMeeting();
