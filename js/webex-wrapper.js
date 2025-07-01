@@ -3,6 +3,10 @@ class WebexCalling {
         this.token = null;
         this.isAuthenticated = false;
         this.webex = null;
+
+        this.me = null;
+
+        this.supportStarted = false;
         
         this.calling = null;
         this.callingClient = null;     
@@ -26,6 +30,8 @@ class WebexCalling {
                 }
             });
             const person = await this.webex.people.get('me');
+            this.me = person;
+            window.ME = person;
             this.token = accessToken;
 
             this.isAuthenticated = true; 
@@ -268,7 +274,7 @@ class WebexCalling {
             });
 
             const cameraStream = await this.webex.meetings.mediaHelpers.createCameraStream({ width: 640, height: 480 });
-            document.getElementById('self-view').srcObject=cameraStream.outputStream;
+            document.getElementById('self-view').srcObject = cameraStream.outputStream;
 
             // options -> https://developer.webex.com/meeting/docs/sdks/webex-meetings-sdk-web-join-a-meeting#join-a-meeting
             const meetingOptions = {
@@ -289,7 +295,6 @@ class WebexCalling {
             };
 
             meeting.on('media:ready', (media) => {
-                console.log(media);
                 if (media.type === 'remoteAudio') {
                     let audioElem = document.getElementById('meeting-remote-audio');
                     audioElem.srcObject = media.stream;
@@ -300,25 +305,46 @@ class WebexCalling {
                 }
             });
 
-            meeting.on('media:remoteAudio:created', (audioMediaGroup) => {
-                console.log(audioMediaGroup);
-                // audioMediaGroup.getRemoteMedia().forEach((media, index) => {
-                //     document.getElementsByClassName('multistream-remote-audio')[index].srcObject = media.stream;
-                // });
+            // meeting.on('meeting:ended', () => {
+            //     this.notifyMeetingStatus('Meeting ended');
+            //     this.currentMeeting = null;
+            //     let audioElem = document.getElementById('meeting-remote-audio');   
+            //     audioElem.srcObject = null;
+            //     let videoElem = document.getElementById('meeting-remote-video');
+            //     videoElem.srcObject = null;
+            // });
+
+            meeting.members.on('members:update', (payload) => {
+                const currentMembers = meeting.members.membersCollection.getAll();
+                const membersList = [];
+                for (const id in currentMembers) membersList.push(currentMembers[id]);
+
+                const membersInLobby = membersList.filter(member => member.status === 'IN_LOBBY');
+                if (membersInLobby.length > 0) 
+                    meeting.admit(membersInLobby.map(member => member.id));
+
+                const membersInMeeting = membersList.filter(member => member.status === 'IN_MEETING');
+                if (membersInMeeting.length > 1 && this.supportStarted === false) {
+                    this.supportStarted = true;
+                    this.notifyMeetingStatus('Support started');
+                }
+
+                if (membersInMeeting.length === 1 && membersInMeeting[0].name === this.me.displayName && this.supportStarted === true) {
+                    this.supportStarted = false;
+                    this.notifyMeetingStatus('Support ended');
+                    window.leaveMeeting();
+                }
             });
 
-            //const { remoteStreams } = 
             await meeting.joinWithMedia(meetingOptions);
-            // console.log(remoteStreams);
-            // if (remoteStreams && remoteStreams.audio) {
-            //     let audioElem = document.getElementById('remote-audio');
-            //     audioElem.srcObject = new MediaStream([remoteStreams.audio]);
-            // }
-
-            //await meeting.startRecording();
+            
+            try {
+              await meeting.startRecording();  
+            } catch (recordingError) {
+                console.warn('Recording not supported or failed to start:', recordingError);
+            }
 
             return meeting;
-
         } catch (error) {
             this.currentMeeting = null;
             throw new Error(`Failed to join meeting: ${error.message}`);
@@ -331,8 +357,21 @@ class WebexCalling {
         }
 
         try {
+            try {
+                await this.currentMeeting.stopRecording();
+            } catch (recordingError) {
+                console.warn('Recording not stopped or not supported:', recordingError);
+            }
+
             await this.currentMeeting.leave();
+
             this.currentMeeting = null;
+            document.getElementById('self-view').srcObject = null;
+            let audioElem = document.getElementById('meeting-remote-audio');
+            audioElem.srcObject = null;
+            let videoElem = document.getElementById('meeting-remote-video');
+            videoElem.srcObject = null;
+
             this.notifyMeetingStatus('Left meeting');
         } catch (error) {
             this.currentMeeting = null;
