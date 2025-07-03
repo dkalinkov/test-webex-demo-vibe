@@ -129,6 +129,22 @@
                                 Cancel Authorization
                             </button>
                         </div>
+                        
+                        <!-- Refresh Token Section -->
+                        <div id="refreshTokenSection" class="bg-green-50 border-l-4 border-green-500 p-4 mt-4 rounded hidden">
+                            <h4 class="font-semibold text-green-800 mb-2">🔄 Token Management</h4>
+                            <p class="text-green-700 mb-3">Refresh your access token using the stored refresh token:</p>
+                            <div class="flex gap-2">
+                                <button onclick="refreshAccessToken()" id="refreshTokenButton"
+                                        class="bg-green-500 text-white py-2 px-4 border-none rounded text-sm cursor-pointer transition-colors duration-300 hover:bg-green-600 flex-1">
+                                    🔄 Refresh Access Token
+                                </button>
+                                <button onclick="clearRefreshToken()" id="clearTokenButton"
+                                        class="bg-red-500 text-white py-2 px-4 border-none rounded text-sm cursor-pointer transition-colors duration-300 hover:bg-red-600">
+                                    🗑️ Clear Token
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Manual Token Entry Section -->

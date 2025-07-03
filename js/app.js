@@ -14,6 +14,9 @@ class WebexCallingApp {
         try {
             this.updateStatus('Ready to authenticate');
             this.updateCallStatus('Ready to call (authenticate first)');
+            
+            // Check if refresh token is available
+            this.checkRefreshTokenAvailability();
         } catch (error) {
             this.updateStatus('Error: Webex SDK not loaded');
             console.error('App initialization failed:', error);
@@ -324,6 +327,8 @@ class WebexCallingApp {
                         // Save refresh token to localStorage
                         if (data.refresh_token) {
                             localStorage.setItem('webex_refresh_token', data.refresh_token);
+                            // Show refresh token section since we now have a refresh token
+                            this.showRefreshTokenSection();
                         }
                         
                         // Fill the access token field
@@ -403,6 +408,109 @@ class WebexCallingApp {
             const errorMessage = error.message || 'Authentication failed. Please check your access token.';
             alert(`Authentication failed: ${errorMessage}`);
         }
+    }
+
+    // Refresh Token Method
+    async refreshAccessToken() {
+        const refreshToken = localStorage.getItem('webex_refresh_token');
+        
+        if (!refreshToken) {
+            alert('No refresh token found. Please re-authenticate using device authorization flow.');
+            return;
+        }
+
+        try {
+            this.updateStatus('Refreshing access token...');
+            
+            // Get stored client credentials from device auth data or prompt for them
+            let clientId = this.deviceAuthData?.client_id;
+            let clientSecret = this.deviceAuthData?.client_secret;
+            
+            // If we don't have stored credentials, get them from the UI
+            if (!clientId || !clientSecret) {
+                clientId = document.getElementById('clientId').value.trim();
+                clientSecret = document.getElementById('clientSecret').value.trim();
+                
+                if (!clientId || !clientSecret) {
+                    alert('Please enter your client ID and client secret to refresh the token');
+                    return;
+                }
+            }
+
+            // Create Basic Auth header with client credentials
+            const credentials = btoa(`${clientId}:${clientSecret}`);
+            
+            const response = await fetch('https://webexapis.com/v1/access_token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${credentials}`
+                },
+                body: new URLSearchParams({
+                    'grant_type': 'refresh_token',
+                    'refresh_token': refreshToken
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.access_token) {
+                // Success! Update the tokens
+                document.getElementById('accessToken').value = data.access_token;
+                
+                // Update refresh token if a new one was provided
+                if (data.refresh_token) {
+                    localStorage.setItem('webex_refresh_token', data.refresh_token);
+                }
+                
+                this.updateStatus('Access token refreshed successfully!');
+                
+                // Automatically authenticate with the new token
+                await this.authenticateWithToken(data.access_token);
+                
+            } else {
+                throw new Error(data.error_description || data.error || 'Failed to refresh token');
+            }
+
+        } catch (error) {
+            console.error('Token refresh error:', error);
+            this.updateStatus('Token refresh failed');
+            
+            // If refresh failed, remove the invalid refresh token
+            localStorage.removeItem('webex_refresh_token');
+            this.hideRefreshTokenSection();
+            
+            alert(`Token refresh failed: ${error.message}. Please re-authenticate using device authorization flow.`);
+        }
+    }
+
+    showRefreshTokenSection() {
+        const section = document.getElementById('refreshTokenSection');
+        if (section) {
+            section.classList.remove('hidden');
+        }
+    }
+
+    hideRefreshTokenSection() {
+        const section = document.getElementById('refreshTokenSection');
+        if (section) {
+            section.classList.add('hidden');
+        }
+    }
+
+    checkRefreshTokenAvailability() {
+        const refreshToken = localStorage.getItem('webex_refresh_token');
+        if (refreshToken) {
+            this.showRefreshTokenSection();
+        } else {
+            this.hideRefreshTokenSection();
+        }
+    }
+
+    clearRefreshToken() {
+        localStorage.removeItem('webex_refresh_token');
+        this.hideRefreshTokenSection();
+        this.updateStatus('Refresh token cleared from storage');
     }
 
     updateStatus(message) {
@@ -552,3 +660,6 @@ window.startDeviceAuth = () => window.webexApp.startDeviceAuth();
 window.completeDeviceAuth = () => window.webexApp.completeDeviceAuth();
 window.openVerificationUrl = () => window.webexApp.openVerificationUrl();
 window.cancelDeviceAuth = () => window.webexApp.cancelDeviceAuth();
+window.refreshAccessToken = () => window.webexApp.refreshAccessToken();
+window.clearRefreshToken = () => window.webexApp.clearRefreshToken();
+window.clearRefreshToken = () => window.webexApp.clearRefreshToken();
