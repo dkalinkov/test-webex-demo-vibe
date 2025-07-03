@@ -62,13 +62,88 @@
                         <p>Status: <span id="statusText" class="font-bold text-red-500">Not Authenticated</span></p>
                     </div>
                     
+                    <!-- Device Authorization Flow Section -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg mb-6 border border-blue-200" id="deviceAuthSection">
+                        <h3 class="mb-4 text-gray-800 text-xl font-semibold">🔐 OAuth Device Authorization Flow</h3>
+                        <p class="text-gray-600 mb-4 text-sm">Use your Webex integration's client ID for secure authentication</p>
+                        
+                        <div class="mb-4">
+                            <label for="clientId" class="block text-sm font-medium text-gray-700 mb-2">Integration Client ID:</label>
+                            <input type="text" id="clientId" placeholder="Enter your Webex integration client ID" 
+                                   class="w-full p-3 border-2 border-gray-200 rounded-md text-base focus:outline-none focus:border-webex-blue">
+                            <small class="text-gray-500 mt-1 block">Get this from your integration in the Webex Developer Portal</small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="clientSecret" class="block text-sm font-medium text-gray-700 mb-2">Integration Client Secret:</label>
+                            <input type="password" id="clientSecret" placeholder="Enter your Webex integration client secret" 
+                                   class="w-full p-3 border-2 border-gray-200 rounded-md text-base focus:outline-none focus:border-webex-blue">
+                            <small class="text-gray-500 mt-1 block">Get this from your integration in the Webex Developer Portal</small>
+                        </div>
+                        
+                        <button onclick="startDeviceAuth()" id="deviceAuthButton"
+                                class="bg-blue-600 text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 w-full hover:bg-blue-700 mb-4">
+                            🚀 Start Device Authorization
+                        </button>
+                        
+                        <!-- Device Code Display -->
+                        <div id="deviceCodeSection" class="hidden">
+                            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded">
+                                <h4 class="font-semibold text-blue-800 mb-2">Step 1: Authorize Your Device</h4>
+                                <p class="text-blue-700 mb-3">Go to the verification URL and enter the user code:</p>
+                                
+                                <div class="space-y-2">
+                                    <div>
+                                        <strong class="text-blue-800">Verification URL:</strong>
+                                        <a id="verificationUri" href="#" target="_blank" class="text-blue-600 hover:underline ml-2"></a>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-800">User Code:</strong>
+                                        <code id="userCode" class="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono ml-2"></code>
+                                    </div>
+                                </div>
+                                
+                                <button onclick="openVerificationUrl()" class="mt-3 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 text-sm">
+                                    🔗 Open Verification Page
+                                </button>
+                            </div>
+                            
+                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 rounded">
+                                <h4 class="font-semibold text-yellow-800 mb-2">Step 2: Complete Authorization</h4>
+                                <p class="text-yellow-700 mb-3">After authorizing in the browser, click to complete the process:</p>
+                                
+                                <button onclick="completeDeviceAuth()" id="completeAuthButton"
+                                        class="bg-green-500 text-white py-2 px-4 border-none rounded text-sm cursor-pointer transition-colors duration-300 hover:bg-green-600">
+                                    ✅ Complete Authorization
+                                </button>
+                                
+                                <div id="authProgress" class="mt-3 hidden">
+                                    <div class="flex items-center">
+                                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                                        <span class="text-green-700 text-sm">Waiting for authorization...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button onclick="cancelDeviceAuth()" class="text-red-600 hover:text-red-800 text-sm underline">
+                                Cancel Authorization
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Manual Token Entry Section -->
                     <div class="bg-white p-8 rounded-lg shadow-lg" id="authForm">
-                        <h3 class="mb-4 text-gray-800">Login to Webex</h3>
-                        <input type="text" id="accessToken" placeholder="Enter your Webex Access Token" required class="w-full p-3 border-2 border-gray-200 rounded-md text-base mb-4 focus:outline-none focus:border-webex-blue">
-                        <button onclick="authenticateWebex()" class="bg-webex-blue text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 w-full hover:bg-blue-700">Authenticate (For token verification)</button>
+                        <h3 class="mb-4 text-gray-800 text-xl font-semibold">🔑 Manual Token Entry</h3>
+                        <p class="text-gray-600 mb-4 text-sm">Or paste your personal access token directly</p>
+                        
+                        <input type="text" id="accessToken" placeholder="Enter your Webex Access Token" required 
+                               class="w-full p-3 border-2 border-gray-200 rounded-md text-base mb-4 focus:outline-none focus:border-webex-blue">
+                        <button onclick="authenticateWebex()" class="bg-webex-blue text-white py-3 px-6 border-none rounded-md text-base cursor-pointer transition-colors duration-300 w-full hover:bg-blue-700">
+                            🔓 Authenticate with Token
+                        </button>
                         <p class="mt-4 text-center">
                             <small>
-                                Get your access token from: 
+                                Get your personal access token from: 
                                 <a href="https://developer.webex.com/docs/getting-started" target="_blank" class="text-webex-blue no-underline hover:underline">Webex Developer Portal</a>
                             </small>
                         </p>
@@ -97,9 +172,9 @@
                         
                         <div class="mb-4">
                             <label for="callDestination" class="block text-sm font-medium text-gray-700 mb-2">Call To:</label>
-                            <input type="text" id="callDestination" placeholder="Enter phone number or email address"
+                            <input type="text" id="callDestination" placeholder="Enter phone number"
                                    class="w-full p-3 border-2 border-gray-200 rounded-md text-base focus:outline-none focus:border-webex-blue">
-                            <small class="text-gray-500 mt-1 block">Enter a phone number (e.g., +1234567890) or email address</small>
+                            <small class="text-gray-500 mt-1 block">Enter a phone number (e.g., +1234567890)</small>
                         </div>
                         
                         <div class="flex gap-4 mb-6">
@@ -177,22 +252,21 @@
                     <h3 class="text-webex-blue mb-4">Setup Instructions</h3>
                     <ol class="ml-6 mb-6 list-decimal">
                         <li class="mb-2">Create a Webex developer account at <a href="https://developer.webex.com" target="_blank" class="text-webex-blue no-underline hover:underline">developer.webex.com</a></li>
-                        <li class="mb-2">Get your personal access token from the developer portal</li>
-                        <li class="mb-2">Enter the token in the Authentication section above</li>
-                        <li class="mb-2">Use the Calling section to make outbound calls to phone numbers and users</li>
+                        <li class="mb-2">For OAuth flow: Create an integration and copy the client ID</li>
+                        <li class="mb-2">For manual auth: Get your personal access token from the developer portal</li>
+                        <li class="mb-2">Choose your authentication method in the Authentication section above</li>
+                        <li class="mb-2">Use the Calling section to make voice calls to phone numbers</li>
                         <li class="mb-2">Use the Meetings section to join Webex meetings with video and audio</li>
                     </ol>
                     
                     <h3 class="text-webex-blue mb-4">Features</h3>
                     <ul class="ml-6 mb-6 list-disc">
-                        <li class="mb-2">Webex SDK integration for calling and meetings</li>
-                        <li class="mb-2">User authentication with personal access tokens</li>
+                        <li class="mb-2">OAuth device authorization flow for secure authentication</li>
+                        <li class="mb-2">Manual access token authentication</li>
                         <li class="mb-2">User profile information display</li>
-                        <li class="mb-2">Outbound calling to phone numbers and Webex users</li>
+                        <li class="mb-2">Voice calling to phone numbers</li>
                         <li class="mb-2">Join Webex meetings with video and audio support</li>
                         <li class="mb-2">Real-time call and meeting status updates</li>
-                        <li class="mb-2">Responsive design with modern UI</li>
-                        <li class="mb-2">Simple HTML/JavaScript implementation</li>
                     </ul>
                 </div>
             </div>

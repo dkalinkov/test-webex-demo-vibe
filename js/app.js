@@ -4,6 +4,10 @@ class WebexCallingApp {
         this.setupEventListeners();
         this.setupCallingStatusListener();
         this.setupMeetingStatusListener();
+        
+        // Device authorization flow state
+        this.deviceAuthData = null;
+        this.authPollingInterval = null;
     }
 
     async initialize() {        
@@ -69,23 +73,7 @@ class WebexCallingApp {
             return;
         }
 
-        try {
-            this.updateStatus('Authenticating...');
-            this.updateCallingStatus('Waiting for authentication...');
-            
-            const person = await this.webexCalling.authenticate(accessToken);
-
-            this.updateStatus('Authenticated successfully');
-            this.showUserInfo(person);
-
-        } catch (error) {
-            console.error('Authentication error:', error);
-            this.updateStatus('Authentication failed');
-            this.updateCallingStatus('Authentication failed');
-            
-            const errorMessage = error.message || 'Authentication failed. Please check your access token.';
-            alert(`Authentication failed: ${errorMessage}`);
-        }
+        await this.authenticateWithToken(accessToken);
     }
 
     async logoutWebex() {
@@ -185,6 +173,235 @@ class WebexCallingApp {
             console.error('Leave meeting error:', error);
             this.updateMeetingStatus('Error leaving meeting');
             alert('Error leaving meeting');
+        }
+    }
+
+    // Device Authorization Flow Methods
+    async startDeviceAuth() {
+        const clientId = document.getElementById('clientId').value.trim();
+        const clientSecret = document.getElementById('clientSecret').value.trim();
+        
+        if (!clientId) {
+            alert('Please enter your integration client ID');
+            return;
+        }
+        
+        if (!clientSecret) {
+            alert('Please enter your integration client secret');
+            return;
+        }
+
+        try {
+            this.updateStatus('Starting device authorization...');
+            
+            // Step 1: Request device code
+            const response = await fetch('https://webexapis.com/v1/device/authorize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'grant_type': 'grant-type:device_code',
+                    'client_id': clientId,
+                    'scope': 'spark:all' // Adjust scopes as needed
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error_description || data.error);
+            }
+
+            this.deviceAuthData = {
+                device_code: data.device_code,
+                user_code: data.user_code,
+                verification_uri: data.verification_uri,
+                verification_uri_complete: data.verification_uri_complete,
+                expires_in: data.expires_in,
+                interval: data.interval || 5,
+                client_id: clientId,
+                client_secret: clientSecret
+            };
+
+            this.showDeviceCodeSection();
+            this.updateStatus('Device authorization started - follow the instructions below');
+
+        } catch (error) {
+            console.error('Device authorization error:', error);
+            this.updateStatus('Device authorization failed');
+            alert(`Device authorization failed: ${error.message}`);
+        }
+    }
+
+    showDeviceCodeSection() {
+        const section = document.getElementById('deviceCodeSection');
+        const verificationUri = document.getElementById('verificationUri');
+        const userCode = document.getElementById('userCode');
+        
+        // Show basic verification URL for display
+        verificationUri.href = this.deviceAuthData.verification_uri;
+        verificationUri.textContent = this.deviceAuthData.verification_uri;
+        userCode.textContent = this.deviceAuthData.user_code;
+        
+        section.classList.remove('hidden');
+    }
+
+    openVerificationUrl() {
+        // Open the complete verification URL with embedded code for direct verification
+        const url = this.deviceAuthData?.verification_uri_complete || this.deviceAuthData?.verification_uri;
+        if (url) {
+            window.open(url, '_blank');
+        }
+    }
+
+    async completeDeviceAuth() {
+        if (!this.deviceAuthData) {
+            alert('No device authorization in progress');
+            return;
+        }
+
+        try {
+            const progressEl = document.getElementById('authProgress');
+            progressEl.classList.remove('hidden');
+            
+            this.updateStatus('Waiting for authorization completion...');
+
+            // Start polling for the access token
+            await this.pollForAccessToken();
+
+        } catch (error) {
+            console.error('Authorization completion error:', error);
+            this.updateStatus('Authorization completion failed');
+            alert(`Authorization failed: ${error.message}`);
+            
+            const progressEl = document.getElementById('authProgress');
+            progressEl.classList.add('hidden');
+        }
+    }
+
+    async pollForAccessToken() {
+        const maxAttempts = Math.floor(this.deviceAuthData.expires_in / this.deviceAuthData.interval);
+        let attempts = 0;
+
+        return new Promise((resolve, reject) => {
+            this.authPollingInterval = setInterval(async () => {
+                attempts++;
+                
+                if (attempts > maxAttempts) {
+                    clearInterval(this.authPollingInterval);
+                    reject(new Error('Authorization timeout - please try again'));
+                    return;
+                }
+
+                try {
+                    // Create Basic Auth header with client credentials
+                    const credentials = btoa(`${this.deviceAuthData.client_id}:${this.deviceAuthData.client_secret}`);
+                    
+                    const response = await fetch('https://webexapis.com/v1/device/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Authorization': `Basic ${credentials}`
+                        },
+                        body: new URLSearchParams({
+                            'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
+                            'device_code': this.deviceAuthData.device_code,
+                            'client_id': this.deviceAuthData.client_id
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.access_token) {
+                        // Success! We got the tokens
+                        clearInterval(this.authPollingInterval);
+                        
+                        // Save refresh token to localStorage
+                        if (data.refresh_token) {
+                            localStorage.setItem('webex_refresh_token', data.refresh_token);
+                        }
+                        
+                        // Fill the access token field
+                        document.getElementById('accessToken').value = data.access_token;
+                        
+                        // Hide device auth section and show success
+                        this.cancelDeviceAuth();
+                        this.updateStatus('Authorization successful! Access token received');
+                        
+                        // Automatically authenticate with the new token
+                        await this.authenticateWithToken(data.access_token);
+                        
+                        resolve(data);
+                        
+                    } else if (data.error === 'authorization_pending') {
+                        // Still waiting for user to authorize
+                        console.log('Waiting for user authorization...');
+                        
+                    } else if (data.error === 'slow_down') {
+                        // Increase polling interval
+                        this.deviceAuthData.interval += 5;
+                        
+                    } else if (data.error === 'access_denied') {
+                        clearInterval(this.authPollingInterval);
+                        reject(new Error('Authorization was denied by the user'));
+                        
+                    } else if (data.error === 'expired_token') {
+                        clearInterval(this.authPollingInterval);
+                        reject(new Error('Authorization code expired - please start over'));
+                        
+                    } else {
+                        clearInterval(this.authPollingInterval);
+                        reject(new Error(data.error_description || data.error || 'Unknown error'));
+                    }
+
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    // Continue polling on network errors
+                }
+                
+            }, this.deviceAuthData.interval * 1000);
+        });
+    }
+
+    cancelDeviceAuth() {
+        if (this.authPollingInterval) {
+            clearInterval(this.authPollingInterval);
+            this.authPollingInterval = null;
+        }
+        
+        this.deviceAuthData = null;
+        
+        const section = document.getElementById('deviceCodeSection');
+        section.classList.add('hidden');
+        
+        const progressEl = document.getElementById('authProgress');
+        progressEl.classList.add('hidden');
+        
+        this.updateStatus('Device authorization cancelled');
+    }
+
+    async authenticateWithToken(token) {
+        try {
+            this.updateStatus('Authenticating with token...');
+            this.updateCallingStatus('Waiting for authentication...');
+            
+            const person = await this.webexCalling.authenticate(token);
+
+            this.updateStatus('Authenticated successfully');
+            this.showUserInfo(person);
+
+        } catch (error) {
+            console.error('Token authentication error:', error);
+            this.updateStatus('Authentication failed');
+            this.updateCallingStatus('Authentication failed');
+            
+            const errorMessage = error.message || 'Authentication failed. Please check your access token.';
+            alert(`Authentication failed: ${errorMessage}`);
         }
     }
 
@@ -331,3 +548,7 @@ window.initiateCall = () => window.webexApp.initiateCall();
 window.hangupCall = () => window.webexApp.hangupCall();
 window.joinMeeting = () => window.webexApp.joinMeeting();
 window.leaveMeeting = () => window.webexApp.leaveMeeting();
+window.startDeviceAuth = () => window.webexApp.startDeviceAuth();
+window.completeDeviceAuth = () => window.webexApp.completeDeviceAuth();
+window.openVerificationUrl = () => window.webexApp.openVerificationUrl();
+window.cancelDeviceAuth = () => window.webexApp.cancelDeviceAuth();
