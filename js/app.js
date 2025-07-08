@@ -206,7 +206,7 @@ class WebexCallingApp {
                 body: new URLSearchParams({
                     'grant_type': 'grant-type:device_code',
                     'client_id': clientId,
-                    'scope': 'spark:all' // Adjust scopes as needed
+                    'scope': 'spark:all spark:kms spark:xsi'
                 })
             });
 
@@ -338,9 +338,6 @@ class WebexCallingApp {
                         this.cancelDeviceAuth();
                         this.updateStatus('Authorization successful! Access token received');
                         
-                        // Automatically authenticate with the new token
-                        await this.authenticateWithToken(data.access_token);
-                        
                         resolve(data);
                         
                     } else if (data.error === 'authorization_pending') {
@@ -463,11 +460,7 @@ class WebexCallingApp {
                     localStorage.setItem('webex_refresh_token', data.refresh_token);
                 }
                 
-                this.updateStatus('Access token refreshed successfully!');
-                
-                // Automatically authenticate with the new token
-                await this.authenticateWithToken(data.access_token);
-                
+                this.updateStatus('Access token refreshed successfully!');                
             } else {
                 throw new Error(data.error_description || data.error || 'Failed to refresh token');
             }

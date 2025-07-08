@@ -139,7 +139,7 @@ class WebexCalling {
                         await new Promise((lineResolve, lineReject) => {
                             const lineTimeout = setTimeout(() => {
                                 lineReject(new Error('Line registration timeout'));
-                            }, 15000);
+                            }, 10 * 1000);
 
                             this.callingLine.on('registered', (lineInfo) => {
                                 clearTimeout(lineTimeout);
